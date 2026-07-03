@@ -26,7 +26,7 @@ jobs:
     - name: Generate Prisma Client
       run: npx prisma generate
       env:
-        DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/postgres?schema=public"
 
     - name: Audit Syntax Lints
       run: npm run lint
@@ -35,7 +35,9 @@ jobs:
     - name: Verify Next.js Compilation Build
       run: npm run build
       env:
-        DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        DIRECT_URL: ${{ secrets.DIRECT_URL }}
-        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+        DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/postgres?schema=public"
+        DIRECT_URL: "postgresql://postgres:postgres@localhost:5432/postgres?schema=public"
+        OPENAI_API_KEY: "mock-openai-api-key"
+        NEXTAUTH_SECRET: "mock-nextauth-secret-key"
+        NEXTAUTH_URL: "http://localhost:3000"
+
