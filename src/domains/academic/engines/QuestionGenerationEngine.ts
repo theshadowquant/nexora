@@ -19,29 +19,17 @@ export const QuestionGenerationEngine = {
     count = 3,
     format: "MCQ" | "DESCRIPTIVE" | "CODING" | "FILL_BLANKS" = "MCQ"
   ): Promise<GeneratedQuestion[]> {
-    const apiKey = process.env.OPENAI_API_KEY;
+    const apiKey = process.env.GEMINI_API_KEY;
 
     if (!apiKey) {
-      console.warn("OPENAI_API_KEY is not defined. Falling back to mock question sets.");
+      console.warn("GEMINI_API_KEY is not defined. Falling back to mock question sets.");
       return this.generateMockQuestions(format, count);
     }
 
     try {
       const start = Date.now();
 
-      const response = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model: "gpt-4o-mini",
-          response_format: { type: "json_object" },
-          messages: [
-            {
-              role: "system",
-              content: `You are the Nexora Assessment Generator. Synthesize exactly ${count} highly technical questions from the context.
+      const systemInstruction = `You are the Nexora Assessment Generator. Synthesize exactly ${count} highly technical questions from the context.
 
 FORMAT INSTRUCTIONS:
 - For MCQ: Generate 4 realistic options. The correctAnswer must match one option.
@@ -62,38 +50,44 @@ OUTPUT JSON STRUCTURE:
       "conceptName": "Distance Vector Routing"
     }
   ]
-}`,
-            },
-            {
-              role: "user",
-              content: `Here is the source content:\n\n${contextText}`,
-            },
-          ],
-        }),
-      });
+}`;
+
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            system_instruction: { parts: [{ text: systemInstruction }] },
+            contents: [{ role: "user", parts: [{ text: `Here is the source content:\n\n${contextText}` }] }],
+            generationConfig: { responseMimeType: "application/json" },
+          }),
+        }
+      );
 
       if (!response.ok) {
         const errText = await response.text();
-        throw new Error(`OpenAI API error: ${response.status} - ${errText}`);
+        throw new Error(`Gemini API error: ${response.status} - ${errText}`);
       }
 
       const result = await response.json();
       const latency = Date.now() - start;
 
       // Log token metrics
-      const usage = result.usage || { prompt_tokens: 150, completion_tokens: 150 };
+      const usage = result.usageMetadata || { promptTokenCount: 0, candidatesTokenCount: 0 };
       await ObservabilityService.logCall(
         null,
-        "gpt-4o-mini",
-        usage.prompt_tokens,
-        usage.completion_tokens,
+        "gemini-1.5-flash",
+        usage.promptTokenCount,
+        usage.candidatesTokenCount,
         latency
       );
 
-      const parsed = JSON.parse(result.choices[0].message.content);
+      const rawText = result.candidates[0].content.parts[0].text;
+      const parsed = JSON.parse(rawText);
       return parsed.questions || [];
     } catch (error) {
-      console.error("OpenAI Question generation failed, falling back to mock:", error);
+      console.error("Gemini Question generation failed, falling back to mock:", error);
       return this.generateMockQuestions(format, count);
     }
   },
