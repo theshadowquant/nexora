@@ -40,7 +40,7 @@ export const AcademicService = {
     const topics = await AcademicRepository.getSyllabusTopics(subjectId);
     
     // Map topics to engine format
-    const flatInputs = topics.map((t) => ({
+    const flatInputs = topics.map((t: any) => ({
       id: t.id,
       isCompleted: t.isCompleted,
       parentId: t.parentId,
