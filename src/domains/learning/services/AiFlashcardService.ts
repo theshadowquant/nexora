@@ -24,7 +24,7 @@ export const AiFlashcardService = {
       throw new Error("No parsed content chunks found for this Note. Please parse the PDF first.");
     }
 
-    const contextText = chunks.map((c) => c.chunkText).join("\n\n");
+    const contextText = chunks.map((c: any) => c.chunkText).join("\n\n");
 
     let cardDataList: Array<{
       front: string;
