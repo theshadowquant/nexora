@@ -1,6 +1,6 @@
 datasource db {
   provider   = "postgresql"
-  extensions = [pgvector]
+  extensions = [vector]
 }
 
 generator client {
@@ -332,7 +332,7 @@ model NoteChunk {
   pageNumber  Int                         @default(1)
   isParent    Boolean                     @default(false)
   parentId    String?                     // References parent chunk if child
-  embedding   Unsupported("vector(1536)")?
+  embedding   Unsupported("vector(768)")?
 
   @@index([noteId])
 }
