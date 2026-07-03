@@ -63,7 +63,7 @@ export const AcademicService = {
     });
 
     // Map marks to credits (assuming defaults credit weight = 4)
-    const courses = marks.map((m) => {
+    const courses = marks.map((m:any) => {
       // Map percentage to grade bounds
       let grade = "F";
       const percentage = (m.marksObtained / m.maxMarks) * 100;
