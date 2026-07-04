@@ -2,24 +2,25 @@ import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 
-let prisma: PrismaClient;
-let pool: Pool;
+const globalRef = global as unknown as {
+  prisma: PrismaClient | undefined;
+  pool: Pool | undefined;
+};
 
-if (process.env.NODE_ENV === "production") {
-  pool = new Pool({ connectionString: process.env.DATABASE_URL });
+function createPrismaClient(): PrismaClient {
+  if (!process.env.DATABASE_URL) {
+    // Build-time safety: return a client that will fail gracefully at runtime
+    // This prevents static page generation from crashing when no DB is available
+    return new PrismaClient();
+  }
+  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
   const adapter = new PrismaPg(pool);
-  prisma = new PrismaClient({ adapter });
-} else {
-  const globalRef = global as unknown as { prisma: PrismaClient; pool: Pool };
-  if (!globalRef.pool) {
-    globalRef.pool = new Pool({ connectionString: process.env.DATABASE_URL });
-  }
-  if (!globalRef.prisma) {
-    const adapter = new PrismaPg(globalRef.pool);
-    globalRef.prisma = new PrismaClient({ adapter });
-  }
-  pool = globalRef.pool;
-  prisma = globalRef.prisma;
+  return new PrismaClient({ adapter });
 }
 
-export { prisma, pool };
+export const prisma =
+  globalRef.prisma ?? createPrismaClient();
+
+if (process.env.NODE_ENV !== "production") {
+  globalRef.prisma = prisma;
+}

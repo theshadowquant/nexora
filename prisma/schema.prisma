@@ -3,6 +3,7 @@ datasource db {
   extensions = [vector]
 }
 
+
 generator client {
   provider        = "prisma-client-js"
   previewFeatures = ["postgresqlExtensions"]
